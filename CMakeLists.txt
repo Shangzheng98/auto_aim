@@ -13,7 +13,9 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 add_executable(RobotBase
         main.cpp
         autoAim/autoAim.cpp
-        autoAim/autoAim.h)
+        autoAim/autoAim.h
+        autoAim/armor.cpp
+        autoAim/armor.h)
 target_link_libraries(RobotBase ${OpenCV_LIBS})
 target_link_libraries(RobotBase ${Boost_LIBRARIES})
 target_link_libraries(RobotBase realsense2::realsense2)
