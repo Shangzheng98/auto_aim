@@ -6,8 +6,9 @@ cmake_minimum_required(VERSION 3.5)
 project(RobotBase)
 
 # the libraries we used in the code
-find_package(OpenCV 4.1.0 REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(realsense2 REQUIRED)
+#find_package(Boost REQUIRED)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 add_executable(RobotBase

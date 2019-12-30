@@ -9,17 +9,18 @@
 #include <stdlib.h>
 #include "../control.h"
 #include "armor.h"
-struct OtherParam {
-    uint8_t color = 0;
+struct _OtherParam {
+    uint8_t color = 0; //我方车辆颜色，0是蓝色，1是红色。用于图像预处理
     uint8_t mode = 0;
 };
+typedef _OtherParam OtherParam;
 
 
 
 class ArmorDetector {
 public:
     ArmorDetector() {
-        t_start_ = cv::getTickCount();
+        //t_start_ = cv::getTickCount();
     }
 
     ~ArmorDetector() {}
@@ -31,7 +32,7 @@ public:
     int color_th_ = 16;
     int gray_th_ = 60;
 private:
-    bool makeRectSafe(cv::Rect &rect, cv::Size size) {
+    bool makeRectSafe(cv::Rect &rect, const cv::Size& size) {
         if (rect.x < 0)
             rect.x = 0;
         if (rect.x + rect.width > size.width)
@@ -40,9 +41,7 @@ private:
             rect.y = 0;
         if (rect.y + rect.height > size.height)
             rect.height = size.height - rect.y;
-        if (rect.width <= 0 || rect.height <= 0)
-            return false;
-        return true;
+        return !(rect.width <= 0 || rect.height <= 0);
     }
 
     cv::Rect GetRoi(const cv::Mat &img);
@@ -57,6 +56,14 @@ private:
 
     uint8_t color_;
     uint8_t mode_;
+
+private:
+    // 判断大小装甲板类型相关参数
+    std::list<bool> history_;
+    int filter_size_ = 5;
+    bool is_small_;
+
 };
+
 
 #endif //ROBOTBASE_AUTOAIM_H
