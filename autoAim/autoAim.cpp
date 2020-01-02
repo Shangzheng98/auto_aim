@@ -18,7 +18,7 @@ cv::Rect ArmorDetector::GetRoi(const cv::Mat &img) {
     Rect rect_roi;
     if (rect_tmp.x == 0 || rect_tmp.y == 0
         || rect_tmp.width == 0 || rect_tmp.height == 0
-        ||lost_count >= 15 || detect_count % 100 == 0) {
+        || lost_count >= 15 || detect_count % 100 == 0) {
         last_target_ = Rect(0, 0, img_size.width, img_size.height);
         rect_roi = Rect(0, 0, img_size.width, img_size.height);
         return rect_roi;
@@ -45,7 +45,7 @@ cv::Rect ArmorDetector::GetRoi(const cv::Mat &img) {
     return rect_roi;
 }
 
-bool ArmorDetector::DetectArmor(cv::Mat &img, cv::Point3f &target_3d, cv::Mat &depth_img, cv::Rect roi) {
+bool ArmorDetector::DetectArmor(cv::Mat &img, cv::Point3f &target_3d, rs2::frameset frames, cv::Rect roi) {
     Mat roi_image = img(roi);
     Point2f offset_roi_point(roi.x, roi.y);
     vector<LED_bar> LED_bars;
@@ -54,7 +54,7 @@ bool ArmorDetector::DetectArmor(cv::Mat &img, cv::Point3f &target_3d, cv::Mat &d
     vector<Mat> BGR_channels;
     split(roi_image, BGR_channels);
     Mat result_img;
-    if (color_ = 0) // blue
+    if (color_ == 0) // blue
     {
         subtract(BGR_channels[2], BGR_channels[1], result_img);
     } else {
@@ -112,12 +112,9 @@ bool ArmorDetector::DetectArmor(cv::Mat &img, cv::Point3f &target_3d, cv::Mat &d
     for (size_t i = 0; i < LED_bars.size(); i++) {
         for (size_t j = i + 1; j < LED_bars.size(); j++) {
             armor temp_armor(LED_bars.at(i), LED_bars.at(j));
-            if (temp_armor.error_angle < 8.0f)
-            {
-                if (temp_armor.is_suitable_size())
-                {
-                    if(temp_armor.get_average_intensity(gray)< 50 )
-                    {
+            if (temp_armor.error_angle < 8.0f) {
+                if (temp_armor.is_suitable_size()) {
+                    if (temp_armor.get_average_intensity(gray) < 50) {
                         temp_armor.max_match(LED_bars, i, j);
                     }
                 }
@@ -127,23 +124,20 @@ bool ArmorDetector::DetectArmor(cv::Mat &img, cv::Point3f &target_3d, cv::Mat &d
 
     //====================================find final armors============================================
     vector<armor> final_armor_list;
-    for(size_t i = 0; i < LED_bars.size() ; i++)
-    {
-        if(LED_bars.at(i).matched)
-        {
+    for (size_t i = 0; i < LED_bars.size(); i++) {
+        if (LED_bars.at(i).matched) {
             LED_bars.at(LED_bars.at(i).match_index).matched = false; //clear another matching flag
-            armor arm_tmp( LED_bars.at(i), LED_bars.at(LED_bars.at(i).match_index));
+            armor arm_tmp(LED_bars.at(i), LED_bars.at(LED_bars.at(i).match_index));
             final_armor_list.push_back(arm_tmp);
         }
     }
 
-    float dist=1e8;
+    float dist = 1e8;
     bool found_flag = false;
     armor target;
-    Point2f roi_center(roi.width/2, roi.height/2);
-    float dx,dy;
-    for (auto & i : final_armor_list)
-    {
+    Point2f roi_center(roi.width / 2, roi.height / 2);
+    float dx, dy;
+    for (auto &i : final_armor_list) {
 #if FAST_DISTANCE
         dx = fabs(final_armor_list.at(i).center.x - roi_center.x);
         dy = fabs(final_armor_list.at(i).center.y - roi_center.y);
@@ -151,7 +145,7 @@ bool ArmorDetector::DetectArmor(cv::Mat &img, cv::Point3f &target_3d, cv::Mat &d
         dx = pow((i.center.x - roi_center.x), 2.0f);
         dy = pow((i.center.y - roi_center.y), 2.0f);
 #endif
-        if( dx + dy < dist){
+        if (dx + dy < dist) {
             target = i;
             dist = dx + dy;
         }
@@ -163,8 +157,7 @@ bool ArmorDetector::DetectArmor(cv::Mat &img, cv::Point3f &target_3d, cv::Mat &d
 #if SHOW_ROI
     rectangle(img,roi,Scalar(255,0,255),1);
 #endif
-    if (found_flag)
-    {
+    if (found_flag) {
 #if SHOW_DRAW_SPOT
         target.draw_spot(img, offset_roi_point);
 #endif
@@ -172,12 +165,10 @@ bool ArmorDetector::DetectArmor(cv::Mat &img, cv::Point3f &target_3d, cv::Mat &d
         Point2f point_2d[4];
         // 左右灯条分类，本别提取装甲板四个外角点
         RotatedRect R, L;
-        if(target.led_bars[0].rect.center.x > target.led_bars[1].rect.center.x)
-        {
+        if (target.led_bars[0].rect.center.x > target.led_bars[1].rect.center.x) {
             R = target.led_bars[0].rect;
             L = target.led_bars[1].rect;
-        }else
-        {
+        } else {
             R = target.led_bars[1].rect;
             L = target.led_bars[0].rect;
         }
@@ -188,8 +179,7 @@ bool ArmorDetector::DetectArmor(cv::Mat &img, cv::Point3f &target_3d, cv::Mat &d
         point_2d[1] = point_tmp[2];
         point_2d[2] = point_tmp[3];
         vector<Point2f> points_roi_tmp;
-        for(int i=0;i<4;i++)
-        {
+        for (int i = 0; i < 4; i++) {
             points_roi_tmp.push_back(point_2d[i] + offset_roi_point);
         }
         float armor_h = target.rect.height;
@@ -198,30 +188,38 @@ bool ArmorDetector::DetectArmor(cv::Mat &img, cv::Point3f &target_3d, cv::Mat &d
 
         //计算ROI的相关参数
         last_target_ = boundingRect(points_roi_tmp);
-
+#if SHOW_LAST_TARGET
         rectangle(img, last_target_,Scalar(255,255,255), 1);
-        lost_count =0;
-    } else
-    {
-        lost_count ++;
+#endif
+        lost_count = 0;
+        target_3d.x = last_target_.x + (last_target_.width)/2;
+        target_3d.y = last_target_.y + (last_target_.height)/2;
+        rs2::depth_frame depthFrame = frames.get_depth_frame();
+        target_3d.z = depthFrame.get_distance(target_3d.x,target_3d.y);
+        //circle(img,Point(target_3d.x,target_3d.y),1,Scalar(255,255,255),1);
+    } else {
+        lost_count++;
     }
     detect_count++;
+
+
+
     return found_flag;
 }
 
-int ArmorDetector::armorTask(cv::Mat &img, OtherParam other_param) {
+int ArmorDetector::armorTask(cv::Mat &color, rs2::frameset frames, OtherParam other_param) {
     color_ = other_param.color;
     mode_ = other_param.mode;
 #if ROI_ENABLE
-    Rect roi = GetRoi(img);
+    Rect roi = GetRoi(color);
 #else
     Size img_size = img.size();
     Rect roi = Rect(0,0, img_size.width, img_size.height);
 #endif
     //printf("ROI X:%d, Y:%d\n",roi.x,roi.y);
-    Point3f target_3d = {};
-    DetectArmor(img, target_3d, img, roi);
-    //printf("Last_target X: %d, Y:%d\n",last_target_.x,last_target_.y);
+    Point3f target_3d = {0,0,0};
+    DetectArmor(color, target_3d, frames, roi);
+    printf("target_3d X: %f, Y:%f, Z: %f\n ",target_3d.x,target_3d.y,target_3d.z);
     //imshow("src",img);
 }
 

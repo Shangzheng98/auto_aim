@@ -22,8 +22,8 @@ target_link_libraries(RobotBase ${Boost_LIBRARIES})
 target_link_libraries(RobotBase realsense2::realsense2)
 #target_link_libraries(RobotBase ${CMAKE_THREAD_LIBS_INIT})
 
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=gnu++11")
-#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=gnu++11 -pthread")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=gnu++11")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=gnu++11 -pthread")
 
 # depend on the platform
 if(ARM OR AARCH64)
